@@ -8,6 +8,8 @@ public class RentalBusinessApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(RentalBusinessApplication.class, args);
+		System.out.println("Rental Business Application started");
+		System.out.println("http://localhost:5000");
 	}
 
 }
