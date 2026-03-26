@@ -2,14 +2,12 @@ package com.backend.rentalBusiness.module.payment.service.impl;
 
 import java.util.*;
 
-import org.hibernate.sql.Template;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
+
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import com.backend.rentalBusiness.module.invoice.service.InvoiceService;
 import com.backend.rentalBusiness.module.payment.dto.request.CreatePaymentRequest;
 import com.backend.rentalBusiness.module.payment.dto.response.PaymentResponse;
 import com.backend.rentalBusiness.module.payment.entity.Payment;
@@ -17,8 +15,12 @@ import com.backend.rentalBusiness.module.payment.mapper.PaymentMapper;
 import com.backend.rentalBusiness.module.payment.provider.PaymentProvider;
 import com.backend.rentalBusiness.module.payment.repository.PaymentRepository;
 import com.backend.rentalBusiness.module.payment.service.PaymentService;
+import com.backend.rentalBusiness.module.rentalTransaction.entity.RentalStatus;
 import com.backend.rentalBusiness.module.rentalTransaction.entity.RentalTransaction;
 import com.backend.rentalBusiness.module.rentalTransaction.repository.RentalTransactionRepository;
+
+import jakarta.transaction.Transactional;
+
 import org.springframework.beans.factory.annotation.Value;
 import lombok.RequiredArgsConstructor;
 
@@ -31,6 +33,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final PaymentMapper mapper;
     private final PaymentProvider paymentProvider;
     private final RestTemplate restTemplate;
+    private final InvoiceService invoiceService;
 
     @Value("${flutterwave.secretKey}")
     private String secretKey;
@@ -38,10 +41,16 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     public PaymentResponse createPayment(CreatePaymentRequest request) {
 
-        RentalTransaction rental =
-                rentalRepository.findById(request.rentalId())
-                        .orElseThrow(() ->
-                                new RuntimeException("Rental not found"));
+        // RentalTransaction rental =
+        //         rentalRepository.findById(request.rentalId())
+        //                 .orElseThrow(() ->
+        //                         new RuntimeException("Rental not found"));
+
+         RentalTransaction rental =
+        rentalRepository.findById(request.rentalId())
+                .orElseThrow(() -> new RuntimeException("Rental not found"));
+
+UUID businessId = rental.getBusiness().getId();
 
         String paymentUrl =
                 paymentProvider.initiatePayment(request);
@@ -112,12 +121,15 @@ public class PaymentServiceImpl implements PaymentService {
 
         return true;
     }
+
     @Override
+@Transactional
 public void handleFlutterwaveWebhook(Map<String, Object> payload) {
 
     String event = payload.get("event").toString();
 
-    if (!"charge.completed".equals(event)) {
+    // ✅ Only process successful charge
+    if (!"charge.completed".equalsIgnoreCase(event)) {
         return;
     }
 
@@ -125,17 +137,59 @@ public void handleFlutterwaveWebhook(Map<String, Object> payload) {
 
     String status = data.get("status").toString();
     String txRef = data.get("tx_ref").toString();
+    String providerTxId = data.get("id").toString();
 
     if (!"successful".equalsIgnoreCase(status)) {
         return;
     }
 
-    Payment payment =
-            repository.findByTxRef(txRef)
-                    .orElseThrow();
+    // 🔥 1. Find payment
+    Payment payment = repository.findByTxRef(txRef)
+            .orElseThrow(() -> new RuntimeException("Payment not found"));
 
+    // 🔒 2. IDEMPOTENCY CHECK (VERY IMPORTANT)
+    if ("SUCCESS".equals(payment.getStatus())) {
+        return; // already processed → ignore duplicate webhook
+    }
+
+    // 🔥 3. Update payment
     payment.setStatus("SUCCESS");
+    payment.setProviderTransactionId(providerTxId);
 
     repository.save(payment);
+
+    // 🔥 4. Update rental
+    RentalTransaction rental = payment.getRentalTransaction();
+
+    rental.setStatus(RentalStatus.PAID);
+    invoiceService.generateInvoice(rental);
+
+    rentalRepository.save(rental);
 }
+//     @Override
+// public void handleFlutterwaveWebhook(Map<String, Object> payload) {
+
+//     String event = payload.get("event").toString();
+
+//     if (!"charge.completed".equals(event)) {
+//         return;
+//     }
+
+//     Map data = (Map) payload.get("data");
+
+//     String status = data.get("status").toString();
+//     String txRef = data.get("tx_ref").toString();
+
+//     if (!"successful".equalsIgnoreCase(status)) {
+//         return;
+//     }
+
+//     Payment payment =
+//             repository.findByTxRef(txRef)
+//                     .orElseThrow();
+
+//     payment.setStatus("SUCCESS");
+
+//     repository.save(payment);
+// }
 }

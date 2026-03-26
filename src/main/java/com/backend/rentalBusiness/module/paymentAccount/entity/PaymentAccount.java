@@ -31,4 +31,16 @@ public class PaymentAccount extends BaseEntity {
     private Boolean payoutsEnabled;
 
     private Boolean detailsSubmitted;
+
+    @Column(name = "subaccount_id")
+private String subaccountId;
+
+@Column(name = "bank_name")
+private String bankName;
+
+@Column(name = "account_number")
+private String accountNumber;
+
+@Column(name = "split_ratio")
+private Double splitRatio; // e.g. 0.9 = 90%
 }

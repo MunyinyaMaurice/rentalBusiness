@@ -4,8 +4,11 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-public record CreateRentalTransactionRequest(
+import jakarta.persistence.Column;
 
+public record CreateRentalTransactionRequest(
+        
+        @Column(unique = true)
         UUID businessId,
         UUID storeId,
 

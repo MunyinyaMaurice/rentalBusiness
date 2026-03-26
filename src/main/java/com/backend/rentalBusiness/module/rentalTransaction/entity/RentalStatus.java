@@ -4,6 +4,7 @@ package com.backend.rentalBusiness.module.rentalTransaction.entity;
     ACTIVE,
     RETURNED,
     OVERDUE,
-    CANCELLED
+    CANCELLED,
+    PAID
 
 }

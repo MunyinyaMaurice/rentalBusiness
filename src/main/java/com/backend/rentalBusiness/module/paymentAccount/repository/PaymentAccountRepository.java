@@ -9,5 +9,6 @@ import java.util.UUID;
 public interface PaymentAccountRepository extends JpaRepository<PaymentAccount, UUID> {
 
     Optional<PaymentAccount> findByBusinessId(UUID businessId);
+    
 
 }

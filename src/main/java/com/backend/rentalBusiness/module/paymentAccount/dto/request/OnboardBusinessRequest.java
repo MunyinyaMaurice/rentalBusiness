@@ -4,12 +4,12 @@ import java.util.UUID;
 
 import jakarta.persistence.Column;
 
-public record CreatePaymentAccountRequest(
+public record OnboardBusinessRequest(
 
         @Column(unique = true)
         UUID businessId,
-        String provider,
-        String country,
-        String currency
+        String bankCode,
+        String accountNumber,
+        Double splitRatio
 
 ) {}
