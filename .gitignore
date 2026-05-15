@@ -31,3 +31,7 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Env files (never commit local secrets)
+.env
+.env.local
