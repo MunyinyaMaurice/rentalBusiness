@@ -1,8 +1,7 @@
 package com.backend.rentalBusiness.auth.controllers;
 
-import com.backend.rentalBusiness.auth.dto.TenantResponse;
-import com.backend.rentalBusiness.auth.services.TenantService;
-import lombok.RequiredArgsConstructor;
+import java.util.List;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -12,10 +11,13 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
+import com.backend.rentalBusiness.auth.dto.TenantResponse;
+import com.backend.rentalBusiness.auth.services.TenantService;
+
+import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping({"/api/businesses", "/api/tenants"})
+@RequestMapping({"/api/tenants"})
 @RequiredArgsConstructor
 public class TenantController {
 
